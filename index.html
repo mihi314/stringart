@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>stringart</title>
+        <script type="text/javascript" src="d3/d3.js"></script>
+        <link rel="stylesheet" type="text/css" href="styles.css" />
+    </head>
+    <body>
+        <div>
+            <button onclick="changeMode('draw')">draw</button>
+            <button onclick="changeMode('select')">select</button>
+
+            <div class="fan-selection">
+                <strong>Selected Fan</strong>
+                <div>Color: <input id="fan-color" type="color" name="favcolor"></div>
+                <div>String Thickness: <input id="fan-thickness" type="number" min="0" step="0.2"></div>
+                <div>Number of Nails: <input id="fan-nails" type="number" min="2" step="1"></div>
+            </div>
+            <!-- <div class="line-selection"></div> -->
+        </div>
+
+        <svg width="100%" height="720">
+            <!-- todo: create groups for fans and lines here (for better "z" order) -->
+        </svg>
+        <script type="text/javascript", src="script.js"></script>
+    </body>
+</html> 
