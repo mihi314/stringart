@@ -3,7 +3,7 @@ g.lines line {
     stroke: steelblue;
 }
 g.lines circle {
-    r: 5;
+    r: 7;
     fill: none;
     pointer-events: all; /* for hover to work with fill:none */
 }

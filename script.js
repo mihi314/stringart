@@ -11,15 +11,66 @@ Array.prototype.remove = function(elem, comp) {
     }
     return this;
 }
+Array.prototype.flatMap = function(lambda) { 
+    return Array.prototype.concat.apply([], this.map(lambda));
+};
 
-function Line(x1, y1, x2, y2) {
-    this.p1 = {x: x1, y: y1};
-    this.p2 = {x: x2, y: y2};
+function Vector(x, y) {
+    this.x = x;
+    this.y = y;
+}
+Vector.prototype.clone = function() {
+    return new Vector(this.x, this.y);
+}
+Vector.prototype.eq = function(p) {
+    return this.x === p.x && this.y === p.y;
+}
+Vector.prototype.plus = function(p) {
+    return new Vector(this.x + p.x, this.y + p.y);
+}
+Vector.prototype.minus = function(p) {
+    return new Vector(this.x - p.x, this.y - p.y);
+}
+Vector.prototype.times = function(factor) {
+    return new Vector(this.x * factor, this.y * factor);
+}
+Vector.prototype.div = function(factor) {
+    return new Vector(this.x / factor, this.y / factor);
+}
+Vector.prototype.length = function() {
+    return Math.sqrt(this.x*this.x + this.y*this.y);
+}
+// angle to x-axis in degrees
+Vector.prototype.angle = function() {
+    return Math.atan2(this.y, this.x) / Math.Pi * 180;
+}
+// returns the closest point to this
+// null if no points
+Vector.prototype.closestPoint = function(points) {
+    var minDist = Infinity;
+    var minPoint = null;
+    for (var i = 0; i < points.length; i++) {
+        var dist = this.minus(points[i]).length();
+        if (dist <= minDist) {
+            minDist = dist;
+            minPoint = points[i];
+        }
+    }
+    return minPoint;
+}
+
+function Line(p1, p2) {
+    // don't rely on p1 or p2 to stay the same object, may be replaced
+    // (i.e. don't keep references to them)
+    this.p1 = p1; // Vector
+    this.p2 = p2;
     this.selected = false;
 }
 
 function Fan(line1, line2) {
-    this.line1 = line1; // reference to a line in lineData
+    // reference to lines in lineData
+    // keep the objects the same
+    this.line1 = line1; 
     this.line2 = line2;
     this.color = "#2d8923"
     this.strokeWidth = 1;
@@ -30,18 +81,16 @@ Fan.prototype.strings = function() {
     console.assert(this.numNails >= 2);
     var l1p1 = this.line1.p1;
     var l1p2 = this.line1.p2;
-    var l1dx = (l1p2.x - l1p1.x) / (this.numNails - 1);
-    var l1dy = (l1p2.y - l1p1.y) / (this.numNails - 1);
+    var l1delta = l1p2.minus(l1p1).div(this.numNails - 1)
 
     var l2p1 = this.line2.p1;
     var l2p2 = this.line2.p2;
-    var l2dx = (l2p2.x - l2p1.x) / (this.numNails - 1);
-    var l2dy = (l2p2.y - l2p1.y) / (this.numNails - 1);
+    var l2delta = l2p1.minus(l2p2).div(this.numNails - 1);
 
     var lines = [];
     for (i = 0; i < this.numNails; i++) {
-        lines.push(new Line(l1p1.x + i*l1dx, l1p1.y + i*l1dy,
-                            l2p1.x + i*l2dx, l2p1.y + i*l2dy));
+        lines.push(new Line(l1p1.plus(l1delta.times(i)), 
+                            l2p2.plus(l2delta.times(i))));
     }
     return lines;
 };
@@ -50,7 +99,6 @@ Fan.prototype.strings = function() {
 var lineData = []; // array of Line objects
 var fanData = []; // array of Fan objects
 var updatingLine = false; // currently drawing a line (with updates on mousemove)
-var firstLineCreated = false;
 
 var selection = null; // Fan, String or null
 
@@ -79,25 +127,28 @@ var svg = d3.select("svg")
     .on("mousemove", function() {
         handlers[mode].mousemove(d3.mouse(this));
     })
-// handle delete key
 d3.select("body")
     .on("keydown", function() {
         // del key
-        if (d3.event.keyCode !== 46)
-            return;
-
-        if (selection instanceof Line) {
-            lineData.remove(selection);
-            // also remove any fan containing that line
-            fanData.remove(selection, function(fan, line) {
-                return fan.line1 === line || fan.line2 === line;
-            });
-            selection = null;
-            update();
+        if (d3.event.keyCode === 46) {
+            if (selection instanceof Line) {
+                lineData.remove(selection);
+                // also remove any fan containing that line
+                fanData.remove(selection, function(fan, line) {
+                    return fan.line1 === line || fan.line2 === line;
+                });
+                unselect();
+                update();
+            }
+            else if (selection instanceof Fan) {
+                fanData.remove(selection);
+                unselect();
+                update();
+            }
         }
-        else if (selection instanceof Fan) {
-            fanData.remove(selection);
-            selection = null;
+        // esc key
+        else if (d3.event.keyCode === 27) {
+            unselect();
             update();
         }
     });
@@ -131,55 +182,106 @@ function modeDraw_onSvgClick(coords) {
     // start new line
     if (!updatingLine) {
         updatingLine = true;
-        var newLine = new Line(coords[0], coords[1], coords[0], coords[1]);
+        var point = snapToLineData(new Vector(coords[0], coords[1]));
+        var newLine = new Line(point, point.clone());
         lineData.push(newLine);
 
-        if (firstLineCreated)
-            fanData.push(new Fan(lineData[lineData.length-2], newLine));
+        // if a line is currently selected (by hand or by being the last one created)
+        // create a new fan with it
+        if (selection instanceof Line)
+            fanData.push(new Fan(selection, newLine));
     }
     // finish current line
     else {
         updatingLine = false;
-        firstLineCreated = !firstLineCreated;
+        selection = lineData[lineData.length - 1];
     }
 }
 function modeDraw_onMousemove(coords) {
     // update current line when moving mouse
     if (updatingLine) {
         var lastLine = lineData[lineData.length - 1];
-        lastLine.p2.x = coords[0];
-        lastLine.p2.y = coords[1];
+        var mousePos = new Vector(coords[0], coords[1]);
+        lastLine.p2 = snap(mousePos, lastLine.p2, lastLine.p1);
         update();
     }
 }
 
-function modeSelect_onCircleDrag(d) {
-    d.x += d3.event.dx;
-    d.y += d3.event.dy;
+// move line end around
+function modeSelect_onCircleDrag(elem, mousePos) {
+    var d = d3.select(elem).datum(); // {p: point, side: either "p1" or "p2"}
+    var otherSide = d.side === "p1" ? "p2" : "p1";
+
+    var line = d3.select(elem.parentNode).datum();
+
+    var snapped = snap(new Vector(mousePos[0], mousePos[1]), d.p, line[otherSide]);
+    line[d.side] = snapped;
     update();
 }
+// select line
 function modeSelect_onCircleClick(elem) {
+    // select corresponding line
     d3.event.stopPropagation();
-    if (selection)
-        selection.selected = false;
-    selection = d3.select(elem.parentNode).datum();
-    selection.selected = true;
+    select(d3.select(elem.parentNode).datum());
     update();
 }
+// select fan
 function modeSelect_onFanClick(elem) {
     d3.event.stopPropagation();
-    if (selection)
-        selection.selected = false;
-    selection = d3.select(elem.parentNode.parentNode).datum();
-    selection.selected = true;
+    select(d3.select(elem.parentNode.parentNode).datum());
     update();
 }
+// unselect
 function modeSelect_onSvgClick() {
-    if (selection)
-        selection.selected = false;
-    selection = null;
+    unselect();
     update();
 }
+
+// snaps a point p to the endpoints of lines in lineData when nearer than radius
+// doesn't snap to exclude
+function snapToLineData(p, exclude) {
+    var radius = 10;
+    var points = lineData.flatMap(function(line) {
+        return [line.p1, line.p2];
+    });
+    if (exclude)
+        points.remove(exclude);
+
+    var closestPoint = p.closestPoint(points);
+    if (closestPoint && p.minus(closestPoint).length() < radius) {
+        return closestPoint.clone(); // ahhhh y u no did immutable
+    }
+    return p;
+}
+
+// lineStart: the starting point of line ending in p
+function snapToSelectedLineLength(p, lineStart) {
+    if (!(selection instanceof Line))
+        return p;
+
+    var radius = 20;
+    var selLineLength = selection.p1.minus(selection.p2).length();
+    var delta = p.minus(lineStart);
+    var curLineLength = delta.length();
+
+    if (Math.abs(selLineLength - curLineLength) < radius) {
+        // stretch the line
+        return lineStart.plus(delta.times(selLineLength / curLineLength));
+    }
+    return p;
+}
+
+// priorize snapping to lineData points
+function snap(p, exclude, lineStart) {
+    var snap1 = snapToLineData(p, exclude);
+    var snap2 = snapToSelectedLineLength(p, lineStart);
+
+    if (!snap1.eq(p))
+        return snap1;
+    return snap2;
+}
+
+
 
 var lineAttrs = {
     x1: function(d) { return d.p1.x; },
@@ -191,7 +293,7 @@ var lineAttrs = {
 function update() {
     updateLines();
     updateFans();
-    updateSelection();
+    updateAttributeBox();
 }
 
 // create and update the lines representing the nails
@@ -210,20 +312,20 @@ function updateLines() {
     lines.attr(lineAttrs);
     
     var drag = d3.behavior.drag().on("drag", function(d) {
-            handlers[mode].circleDrag(d);
+            handlers[mode].circleDrag(this, d3.mouse(this));
         });
 
     // circles for dragging in selection mode
     var circles = groups.selectAll("circle")
-        .data(function(d) { return [d.p1, d.p2] })
+        .data(function(d) { return [{p: d.p1, side: "p1"}, {p: d.p2, side: "p2"}] })
     circles.enter().append("circle")
         .call(drag)
         .on("click", function(d) {
             handlers[mode].circleClick(this);
         })
     circles.exit().remove();
-    circles.attr("cx", function(d) { return d.x; })
-           .attr("cy", function(d) { return d.y; });
+    circles.attr("cx", function(d) { return d.p.x; })
+           .attr("cy", function(d) { return d.p.y; });
 }
 
 
@@ -265,8 +367,8 @@ function updateFans() {
     stringsHover.attr(lineAttrs);
 }
 
-// populate the info box to reflect current selection
-function updateSelection() {
+// populate the attribute box to reflect current selection
+function updateAttributeBox() {
     if (selection instanceof Fan) {
         d3.select("#fan-color").property("value", selection.color);
         d3.select("#fan-thickness").property("value", selection.strokeWidth);
@@ -277,12 +379,22 @@ function updateSelection() {
     }
 }
 
+
+function select(primitive) {
+    unselect();
+    selection = primitive;
+    selection.selected = true;
+}
+
+function unselect() {
+    if (selection) {
+        selection.selected = false;
+        selection = null;
+    }
+}
+
+
 function changeMode(mode_) {
     mode = mode_;
     updatingLine = false;
-    firstLineCreated = false;
-    if (selection) {
-        selection.selected = false;
-        update();
-    }
 }
