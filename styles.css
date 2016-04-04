@@ -25,9 +25,9 @@ g.fans g.hover {
     stroke: rgb(0, 102, 0);
 }*/
 
-/*div {
-    border: 1px solid black;
-}*/
+div.line-selection {
+    float: left;
+}
 
 svg {
     cursor: default;

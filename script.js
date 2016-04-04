@@ -5,6 +5,12 @@ function Line(p1, p2) {
     this.p2 = p2;
     this.selected = false;
 }
+Line.prototype.length = function(newLength) {
+    return this.p2.minus(this.p1).length();
+};
+Line.prototype.angle = function(newAngle) {
+    return this.p2.minus(this.p1).angle();
+};
 
 function Fan(line1, line2) {
     // reference to lines in lineData
@@ -15,7 +21,8 @@ function Fan(line1, line2) {
     this.strokeWidth = 1;
     this.numNails = 20;
     this.selected = false;
-}
+};
+// return all the lines/strings comprising the fan that spans line1 and line2
 Fan.prototype.strings = function() {
     console.assert(this.numNails >= 2);
     var l1p1 = this.line1.p1;
@@ -58,11 +65,11 @@ var modeDraw = {
         this.updatingLine = false;
     },
 
-    svgClick: function(coords) {
+    svgClick: function(mouseCoords) {
         // start new line
         if (!this.updatingLine) {
             this.updatingLine = true;
-            var point = snapToLineData(new Vector(coords[0], coords[1]));
+            var point = snapToLineData(new Vector(mouseCoords[0], mouseCoords[1]));
             var newLine = new Line(point, point.clone());
             lineData.push(newLine);
 
@@ -78,12 +85,13 @@ var modeDraw = {
         }
     },
 
-    mousemove: function(coords) {
+    // todo: unify with modeSelect.circleDrag
+    mousemove: function(mouseCoords) {
         // update current line when moving mouse
         if (this.updatingLine) {
             var lastLine = lineData[lineData.length - 1];
-            var mousePos = new Vector(coords[0], coords[1]);
-            lastLine.p2 = snap(mousePos, lastLine.p2, lastLine.p1);
+            var mousePos = new Vector(mouseCoords[0], mouseCoords[1]);
+            lastLine.p2 = snap(mousePos, lastLine.p2, lastLine.p1, nailDistance);
             update();
         }
     },
@@ -120,13 +128,13 @@ var modeSelect = {
     },
 
     // move line end around
-    circleDrag: function(elem, mousePos) {
+    circleDrag: function(elem, mouseCoords) {
         var d = d3.select(elem).datum(); // {p: point, side: either "p1" or "p2"}
         var otherSide = d.side === "p1" ? "p2" : "p1";
 
         var line = d3.select(elem.parentNode).datum();
 
-        var snapped = snap(new Vector(mousePos[0], mousePos[1]), d.p, line[otherSide]);
+        var snapped = snap(new Vector(mouseCoords[0], mouseCoords[1]), d.p, line[otherSide], nailDistance);
         line[d.side] = snapped;
         update();
     }
@@ -135,6 +143,7 @@ var modeSelect = {
 
 // snaps a point p to the endpoints of lines in lineData when nearer than radius
 // doesn't snap to exclude
+// returns p when no snapping was done
 function snapToLineData(p, exclude) {
     var radius = 10;
     var points = lineData.flatMap(function(line) {
@@ -151,27 +160,39 @@ function snapToLineData(p, exclude) {
 }
 
 // lineStart: the starting point of line ending in p
-function snapToSelectedLineLength(p, lineStart) {
-    if (!(selection instanceof Line))
-        return p;
-
+// returns p when no snapping was done
+function snapToLength(p, lineStart, length) {
     var radius = 20;
-    var selLineLength = selection.p1.minus(selection.p2).length();
     var delta = p.minus(lineStart);
     var curLineLength = delta.length();
 
-    if (Math.abs(selLineLength - curLineLength) < radius) {
+    if (Math.abs(length - curLineLength) < radius) {
         // stretch the line
-        return lineStart.plus(delta.times(selLineLength / curLineLength));
+        return lineStart.plus(delta.times(length / curLineLength));
     }
     return p;
 }
 
 // priorize snapping to lineData points
-function snap(p, exclude, lineStart) {
+// lineStart: the starting point of line ending in p
+// returns p when no snapping was done
+function snap(p, exclude, lineStart, nailDistance) {
     var snap1 = snapToLineData(p, exclude);
-    var snap2 = snapToSelectedLineLength(p, lineStart);
 
+    // snap to selected line length
+    if (selection instanceof Line) {
+        var length = selection.p1.minus(selection.p2).length();
+    }
+    // no line selected, 
+    // snap to multiples of nailDistance
+    // hmmm, only when not in circleDrag?
+    else {
+        var curLineLength = p.minus(lineStart).length();
+        var length = Math.round(curLineLength / nailDistance) * nailDistance;
+    }
+    var snap2 = snapToLength(p, lineStart, length);
+
+    // actually snapped to lineData
     if (!snap1.eq(p))
         return snap1;
     return snap2;
@@ -191,7 +212,8 @@ var lineAttrs = {
 function update() {
     updateLines();
     updateFans();
-    updateAttributeBox();
+    if (selection)
+        updatePropertyBox(selection);
 }
 
 // create and update the lines representing the nails
@@ -264,18 +286,84 @@ function updateFans() {
     stringsHover.attr(lineAttrs);
 }
 
-// populate the attribute box to reflect current selection
-function updateAttributeBox() {
-    if (selection instanceof Fan) {
-        d3.select("#fan-color").property("value", selection.color);
-        d3.select("#fan-thickness").property("value", selection.strokeWidth);
-        d3.select("#fan-nails").property("value", selection.numNails);
+// populate the property box to reflect current selection
+function updatePropertyBox(lineOrFan) {
+    if (lineOrFan instanceof Line) {
+        var props = lineProps;
+        var idSuffix = "line";
     }
     else {
-
+        var props = fanProps;
+        var idSuffix = "fan";
     }
+    props.forEach(function(prop, accessors) {
+        d3.select("#" + idSuffix + "-" + prop).property("value", accessors.get(lineOrFan));
+    })
 }
 
+// property: setter
+var lineProps = d3.map({
+    x1: {set: function(line, val) { val = Number(val); line.p1.x = val; },
+         get: function(line) { return Math.round(line.p1.x); }},
+    y1: {set: function(line, val) { val = Number(val); line.p1.y = val; },
+         get: function(line) { return Math.round(line.p1.y); }},
+    x2: {set: function(line, val) { val = Number(val); line.p2.x = val; },
+         get: function(line) { return Math.round(line.p2.x); }},
+    y2: {set: function(line, val) { val = Number(val); line.p2.y = val; },
+         get: function(line) { return Math.round(line.p2.y); }},
+    length: {
+        set: function(line, val) {
+            val = Number(val);
+            var delta = line.p2.minus(line.p1);
+            line.p2 = line.p1.plus(VectorFromPolar(val, line.angle()));
+        },
+        get: function(line) { return Math.round(line.length()); }},
+    angle: {
+        set: function(line, val) {
+            val = Number(val);
+            var delta = line.p2.minus(line.p1);
+            line.p2 = line.p1.plus(VectorFromPolar(delta.length(), val));
+        },
+        get: function(line) { return Math.round(line.angle()*10)/10; }}
+});
+var fanProps = d3.map({
+    color: {
+        set: function(fan, val) {
+            fan.color = val;
+        },
+        get : function(fan) { return fan.color; }
+    },
+    strokeWidth: {
+        set: function(fan, val) {
+            val = Number(val);
+            if (val >= 0)
+                fan.strokeWidth = val;
+        },
+        get: function(fan) { return fan.strokeWidth; }
+    },
+    numNails: {
+        set: function(fan, val) {
+            val = Number(val);
+            if (val >= 2)
+                fan.numNails = val;
+        },
+        get: function(fan) { return fan.numNails; }
+    }
+});
+
+function attachPropHandlers(type, props) {
+    var idSuffix = (type === Line) ? "line" : "fan";
+    props.forEach(function(prop, accessors) {
+        d3.select("#" + idSuffix + "-" + prop).on("input", function() {
+            if (!(selection instanceof type))
+                return;
+            if (this.value) {
+                accessors.set(selection, this.value);
+                update();
+            }
+        });
+    });
+}
 
 ////////////
 // selection
@@ -301,6 +389,7 @@ var fanData = []; // array of Fan objects
 var selection = null; // Fan, String or null
 var mode = modeDraw;
 
+var nailDistance = 20;
 
 var svg = d3.select("svg")
     .on("click", function() {
@@ -335,27 +424,8 @@ d3.select("body")
         }
     });
 
-// handle info box changes
-d3.select("#fan-color").on("input", function() {
-    if (this.value) {
-        console.assert(selection instanceof Fan);
-        selection.color = this.value;
-        update();
-    }
-});
-d3.select("#fan-thickness").on("input", function() {
-    if (this.value && this.value >= 0) {
-        console.assert(selection instanceof Fan);
-        selection.strokeWidth = this.value;
-        update();
-    }
-});
-d3.select("#fan-nails").on("input", function() {
-    if (this.value && this.value >= 2) {
-        console.assert(selection instanceof Fan);
-        selection.numNails = this.value;
-        update();
-    }
-});
+// handle property box changes
+attachPropHandlers(Line, lineProps);
+attachPropHandlers(Fan, fanProps);
 
 update();

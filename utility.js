@@ -20,6 +20,12 @@ function Vector(x, y) {
     this.x = x;
     this.y = y;
 }
+// angle in degrees
+function VectorFromPolar(length, angle) {
+    var x = length * Math.cos(angle / 180 * Math.PI);
+    var y = length * Math.sin(angle / 180 * Math.PI);
+    return new Vector(x, y);
+}
 Vector.prototype.clone = function() {
     return new Vector(this.x, this.y);
 }
@@ -43,7 +49,7 @@ Vector.prototype.length = function() {
 }
 // angle to x-axis in degrees
 Vector.prototype.angle = function() {
-    return Math.atan2(this.y, this.x) / Math.Pi * 180;
+    return Math.atan2(this.y, this.x) / Math.PI * 180;
 }
 // returns the closest point to this
 // null if no points
