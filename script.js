@@ -23,6 +23,7 @@ function Fan(line1, line2) {
     this.selected = false;
 };
 // return all the lines/strings comprising the fan that spans line1 and line2
+// p1 of the returned strings touch line1, p2 touch line2
 Fan.prototype.strings = function() {
     console.assert(this.numNails >= 2);
     var l1p1 = this.line1.p1;
@@ -69,7 +70,7 @@ var modeDraw = {
         // start new line
         if (!this.updatingLine) {
             this.updatingLine = true;
-            var point = snapToLineData(new Vector(mouseCoords[0], mouseCoords[1]));
+            var point = snapToNails(new Vector(mouseCoords[0], mouseCoords[1]));
             var newLine = new Line(point, point.clone());
             lineData.push(newLine);
 
@@ -147,17 +148,35 @@ var modeSelect = {
 // snaps a point p to the endpoints of lines in lineData when nearer than radius
 // doesn't snap to exclude
 // returns p when no snapping was done
-function snapToLineData(p, excludedLine) {
+function snapToNails(p, excludedLine) {
     var radius = 10;
-    var points = lineData.flatMap(function(line) {
+
+    var nails1 = lineData.flatMap(function(line) {
         if (line !== excludedLine)
             return [line.p1, line.p2];
         return [];
     });
 
-    var closestPoint = p.closestPoint(points);
-    if (closestPoint && p.minus(closestPoint).length() < radius) {
-        return closestPoint.clone(); // ahhhh y u no did immutable
+    var nails2 = fanData.flatMap(function(fan) {
+        // exclude all nails that lie on the excludedLine
+        // all nails on line1 of a fan are "p1", so only include "p2"
+        var side = null;
+        if (fan.line1 === excludedLine)
+            side = "p2";
+        else if (fan.line2 === excludedLine)
+            side = "p1"
+    
+        return fan.strings().flatMap(function(line) {
+            if (side)
+                return [line[side]];
+            else
+                return [line.p1, line.p2];
+        });
+    });
+
+    var closestNail = p.closestPoint(nails1.concat(nails2));
+    if (closestNail && p.minus(closestNail).length() < radius) {
+        return closestNail.clone(); // ahhhh y u no did immutable
     }
     return p;
 }
@@ -176,11 +195,11 @@ function snapToLength(p, lineStart, length) {
     return p;
 }
 
-// priorize snapping to lineData points
+// priorize snapping to nails
 // lineStart: the starting point of line ending in p
 // returns p when no snapping was done
 function snap(p, excludedLine, lineStart, nailDistance) {
-    var snap1 = snapToLineData(p, excludedLine);
+    var snap1 = snapToNails(p, excludedLine);
 
     // snap to selected line length
     if (selection instanceof Line) {
@@ -195,7 +214,7 @@ function snap(p, excludedLine, lineStart, nailDistance) {
     }
     var snap2 = snapToLength(p, lineStart, length);
 
-    // actually snapped to lineData
+    // actually snapped to a nail
     if (!snap1.eq(p))
         return snap1;
     return snap2;
@@ -392,7 +411,7 @@ var fanData = []; // array of Fan objects
 var selection = null; // Fan, String or null
 var mode = modeDraw;
 
-var nailDistance = 20;
+var nailDistance = 30;
 
 var svg = d3.select("svg")
     .on("click", function() {
