@@ -75,8 +75,11 @@ var modeDraw = {
 
             // if a line is currently selected (by hand or by being the last one created)
             // create a new fan with it
-            if (selection instanceof Line)
-                fanData.push(new Fan(selection, newLine));
+            if (selection instanceof Line) {
+                var newFan = new Fan(selection, newLine);
+                newFan.numNails = Math.round(newFan.line1.length() / nailDistance + 1);
+                fanData.push(newFan);
+            }
         }
         // finish current line
         else {
@@ -91,7 +94,7 @@ var modeDraw = {
         if (this.updatingLine) {
             var lastLine = lineData[lineData.length - 1];
             var mousePos = new Vector(mouseCoords[0], mouseCoords[1]);
-            lastLine.p2 = snap(mousePos, lastLine.p2, lastLine.p1, nailDistance);
+            lastLine.p2 = snap(mousePos, lastLine, lastLine.p1, nailDistance);
             update();
         }
     },
@@ -134,7 +137,7 @@ var modeSelect = {
 
         var line = d3.select(elem.parentNode).datum();
 
-        var snapped = snap(new Vector(mouseCoords[0], mouseCoords[1]), d.p, line[otherSide], nailDistance);
+        var snapped = snap(new Vector(mouseCoords[0], mouseCoords[1]), line, line[otherSide], nailDistance);
         line[d.side] = snapped;
         update();
     }
@@ -144,13 +147,13 @@ var modeSelect = {
 // snaps a point p to the endpoints of lines in lineData when nearer than radius
 // doesn't snap to exclude
 // returns p when no snapping was done
-function snapToLineData(p, exclude) {
+function snapToLineData(p, excludedLine) {
     var radius = 10;
     var points = lineData.flatMap(function(line) {
-        return [line.p1, line.p2];
+        if (line !== excludedLine)
+            return [line.p1, line.p2];
+        return [];
     });
-    if (exclude)
-        points.remove(exclude);
 
     var closestPoint = p.closestPoint(points);
     if (closestPoint && p.minus(closestPoint).length() < radius) {
@@ -176,8 +179,8 @@ function snapToLength(p, lineStart, length) {
 // priorize snapping to lineData points
 // lineStart: the starting point of line ending in p
 // returns p when no snapping was done
-function snap(p, exclude, lineStart, nailDistance) {
-    var snap1 = snapToLineData(p, exclude);
+function snap(p, excludedLine, lineStart, nailDistance) {
+    var snap1 = snapToLineData(p, excludedLine);
 
     // snap to selected line length
     if (selection instanceof Line) {
