@@ -78,7 +78,7 @@ var modeDraw = {
             // create a new fan with it
             if (selection instanceof Line) {
                 var newFan = new Fan(selection, newLine);
-                newFan.numNails = Math.round(newFan.line1.length() / nailDistance + 1);
+                newFan.numNails = Math.max(Math.round(newFan.line1.length() / nailDistance + 1), 2);
                 fanData.push(newFan);
             }
         }
