@@ -202,7 +202,8 @@ function snap(p, excludedLine, lineStart, nailDistance) {
     var snap1 = snapToNails(p, excludedLine);
 
     // snap to selected line length
-    if (selection instanceof Line) {
+    // but not when the excluded line (i.e. the one being changed) is the selected one
+    if (selection instanceof Line && selection !== excludedLine) {
         var length = selection.p1.minus(selection.p2).length();
     }
     // no line selected, 
