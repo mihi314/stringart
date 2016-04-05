@@ -1,7 +1,15 @@
 g#lines line {
     stroke-width: 2;
-    stroke: steelblue;
+    stroke: lightgrey;
 }
+g#lines line.selected {
+    stroke: black;
+    marker-end: url("#arrowhead");
+}
+.arrowhead {
+    fill: black;
+}
+
 g#circles circle {
     r: 7;
     fill: none;
@@ -14,7 +22,6 @@ g#circles circle:hover {
 g#fans g.string {
     pointer-events: none;
 }
-
 g#fans g.hover {
     stroke-width: 5;
     stroke: none;

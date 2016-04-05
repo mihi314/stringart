@@ -85,7 +85,8 @@ var modeDraw = {
         // finish current line
         else {
             this.updatingLine = false;
-            selection = lineData[lineData.length - 1];
+            select(lineData[lineData.length - 1]);
+            update();
         }
     },
 
@@ -247,7 +248,8 @@ function updateLines() {
     lines.enter().append("line");
     lines.exit().remove();
     // enter+update
-    lines.attr(lineAttrs);
+    lines.attr(lineAttrs)
+        .classed("selected", function(d) { return d.selected; });
     
     // dragging circles are in a separate group so that they are always on top
     // of the rest of the svg elements
