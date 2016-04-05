@@ -409,6 +409,26 @@ function unselect() {
     }
 }
 
+// changes the z-position of the selected Line/Fan
+function moveSelection(dir) {
+    if (selection instanceof Line)
+        var data = lineData;
+    else if (selection instanceof Fan)
+        var data = fanData;
+    else
+        return;
+
+    var pos = data.indexOf(selection);
+    console.assert(pos !== -1);
+
+    var newPos = pos + dir;
+    if (newPos < 0 || newPos >= data.length)
+        return
+
+    data.splice(pos, 1);
+    data.splice(newPos, 0, selection);
+    update();
+}
 
 
 var lineData = []; // array of Line objects
@@ -417,7 +437,7 @@ var fanData = []; // array of Fan objects
 var selection = null; // Fan, String or null
 var mode = modeDraw;
 
-var nailDistance = 30;
+var nailDistance = 20;
 
 var svg = d3.select("svg")
     .on("click", function() {
