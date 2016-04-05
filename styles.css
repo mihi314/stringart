@@ -1,21 +1,21 @@
-g.lines line {
+g#lines line {
     stroke-width: 2;
     stroke: steelblue;
 }
-g.lines circle {
+g#circles circle {
     r: 7;
     fill: none;
     pointer-events: all; /* for hover to work with fill:none */
 }
-g.lines circle:hover {
+g#circles circle:hover {
     fill: gray;
 }
 
-g.fans g.string {
+g#fans g.string {
     pointer-events: none;
 }
 
-g.fans g.hover {
+g#fans g.hover {
     stroke-width: 5;
     stroke: none;
     pointer-events: all;

@@ -240,19 +240,22 @@ function update() {
 
 // create and update the lines representing the nails
 function updateLines() {
-    // group for the lines and dragging circles
-    var groups = svg.selectAll("g.lines")
+    // group for the lines
+    var lines = svg.select("g#lines").selectAll("line")
         .data(lineData);
-    groups.enter().append("g")
-        .classed("lines", true);
-    groups.exit().remove();
-
-    var lines = groups.selectAll("line").data(function(d) { return [d]; });
     lines.enter().append("line");
     lines.exit().remove();
     // enter+update
     lines.attr(lineAttrs);
     
+    // dragging circles are in a separate group so that they are always on top
+    // of the rest of the svg elements
+    // they are additionaly grouped in pairs
+    var groups = svg.select("g#circles").selectAll("g")
+        .data(lineData);
+    groups.enter().append("g")
+    groups.exit().remove();
+
     var drag = d3.behavior.drag().on("drag", function(d) {
             mode.circleDrag(this, d3.mouse(this));
         });
@@ -272,11 +275,11 @@ function updateLines() {
 
 // create and update the lines representing the strings between pairs of nails
 function updateFans() {
-    var fans = svg.selectAll("g.fans")
+    var fans = svg.select("g#fans").selectAll("g.fan")
         .data(fanData);
 
     var fansEnter = fans.enter().append("g")
-        .classed("fans", true);
+        .classed("fan", true);
     fansEnter.append("g").classed("string", true);
     fansEnter.append("g").classed("hover", true);
     fans.exit().remove();
