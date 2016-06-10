@@ -21,7 +21,7 @@ function Vector(x, y) {
     this.y = y;
 }
 // angle in degrees
-function VectorFromPolar(length, angle) {
+Vector.fromPolar = function(length, angle) {
     var x = length * Math.cos(angle / 180 * Math.PI);
     var y = length * Math.sin(angle / 180 * Math.PI);
     return new Vector(x, y);

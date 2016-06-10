@@ -6,12 +6,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <title>Stringart</title>
-        <script type="text/javascript" src="d3/d3.js"></script>
+        <script type="text/javascript" src="lib/d3.js"></script>
+        <script type="text/javascript" src="lib/underscore-min.js"></script>
         <script type="text/javascript" src="utility.js"></script>
 
-        <link href="bootstrap.css" rel="stylesheet">
+        <link href="lib/bootstrap.css" rel="stylesheet">
+        <link href="lib/bootstrap-theme.css" rel="stylesheet">
         <link href="styles.css" rel="stylesheet">
-        <!-- <link href="bootstrap-theme.css" rel="stylesheet"> -->
     </head>
     <body>
         <div>
@@ -19,6 +20,11 @@
             <button class="btn btn-primary" onclick="changeMode('select')">select</button>
             <button class="btn btn-success" onclick="moveSelection(1)">layer up</button>
             <button class="btn btn-success" onclick="moveSelection(-1)">layer down</button>
+            <button class="btn btn-default" onclick="save()">save</button>
+            <label class="btn btn-default" for="load-btn">
+                <input id="load-btn" type="file" style="display:none;" onchange="loadFromFile()">
+                load
+            </label>
 
             <div>
                 <div class="line-selection">

@@ -343,14 +343,14 @@ var lineProps = d3.map({
         set: function(line, val) {
             val = Number(val);
             var delta = line.p2.minus(line.p1);
-            line.p2 = line.p1.plus(VectorFromPolar(val, line.angle()));
+            line.p2 = line.p1.plus(Vector.fromPolar(val, line.angle()));
         },
         get: function(line) { return Math.round(line.length()); }},
     angle: {
         set: function(line, val) {
             val = Number(val);
             var delta = line.p2.minus(line.p1);
-            line.p2 = line.p1.plus(VectorFromPolar(delta.length(), val));
+            line.p2 = line.p1.plus(Vector.fromPolar(delta.length(), val));
         },
         get: function(line) { return Math.round(line.angle()*10)/10; }}
 });
@@ -393,6 +393,7 @@ function attachPropHandlers(type, props) {
     });
 }
 
+
 ////////////
 // selection
 
@@ -425,11 +426,88 @@ function moveSelection(dir) {
     if (newPos < 0 || newPos >= data.length)
         return
 
+    // remove at old position
     data.splice(pos, 1);
+    // insert at new one
     data.splice(newPos, 0, selection);
     update();
 }
 
+
+////////////
+// saving
+
+function save() {
+    unselect(); // set "selected" properties to false
+    update();
+    var json = JSON.stringify({"lineData": lineData, "fanData": fanData}, function(k, v) {
+        // also save the type of the object to serialize, in order to cast to it when loading
+        if (!(v instanceof Array) && (v.constructor.name !== "Object")) {
+            v.type = v.constructor.name;
+        }
+
+        // Lines inside a Fan object get serialized as an index into the lineData array
+        // (could be generalized to make all duplicate objects point be the same object again when loading)
+        // "this" is the object containing the current key/value pair
+        if ((this instanceof Fan) && (v instanceof Line)) {
+            return lineData.indexOf(v);
+        }
+        return v;
+    });
+    
+    saveToFile(json, "stringart.txt");
+}
+
+function saveToFile(text, filename) {
+    var a = document.createElement("a");
+    var file = new Blob([text], {type: "text/plain"});
+    a.href = URL.createObjectURL(file);
+    a.download = filename;
+    a.click();
+}
+
+// eventhandler after clicking load button
+function loadFromFile() {
+    var file = event.target.files[0];
+    // user hit cancel etc
+    if (!file)
+        return;
+
+    var reader = new FileReader();
+    reader.onload = function() {
+        load(event.target.result);
+    }
+    reader.readAsText(file);
+}
+
+function load(jsonString) {
+    var json = JSON.parse(jsonString, function(k, v) {
+        // cast objects back to our types again
+        if (v.type) {
+            var constructor = window[v.type];
+            console.assert(constructor);
+            delete v.type;
+
+            var obj = Object.create(constructor.prototype);
+            _.extendOwn(obj, v);
+            return obj;
+        }
+        return v;
+    });
+
+    lineData = json.lineData;
+    fanData = json.fanData.map(function(fan) {
+        fan.line1 = lineData[fan.line1];
+        fan.line2 = lineData[fan.line2];
+        return fan;
+    });
+
+    update();
+}
+
+
+////////////
+// main
 
 var lineData = []; // array of Line objects
 var fanData = []; // array of Fan objects
