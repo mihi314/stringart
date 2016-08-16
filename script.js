@@ -109,9 +109,9 @@ var modeDraw = {
 var modeSelect = {
     reset: function(){},
 
-    // unselect
+    // deselect
     svgClick: function() {
-        unselect();
+        deselect();
         update();
     },
 
@@ -188,6 +188,11 @@ function snapToLength(p, lineStart, length) {
     var radius = 20;
     var delta = p.minus(lineStart);
     var curLineLength = delta.length();
+
+    if (curLineLength == 0) {
+        // p and lineStart are the same, can't determine a direction to strech in
+        return p;
+    }
 
     if (Math.abs(length - curLineLength) < radius) {
         // stretch the line
@@ -329,7 +334,7 @@ function updatePropertyBox(lineOrFan) {
     })
 }
 
-// property: setter
+// accessors for updating line and fan properties via the properies box
 var lineProps = d3.map({
     x1: {set: function(line, val) { val = Number(val); line.p1.x = val; },
          get: function(line) { return Math.round(line.p1.x); }},
@@ -398,12 +403,12 @@ function attachPropHandlers(type, props) {
 // selection
 
 function select(primitive) {
-    unselect();
+    deselect();
     selection = primitive;
     selection.selected = true;
 }
 
-function unselect() {
+function deselect() {
     if (selection) {
         selection.selected = false;
         selection = null;
@@ -438,7 +443,7 @@ function moveSelection(dir) {
 // saving
 
 function save() {
-    unselect(); // set "selected" properties to false
+    deselect(); // set "selected" properties to false
     update();
     var json = JSON.stringify({"lineData": lineData, "fanData": fanData}, function(k, v) {
         // also save the type of the object to serialize, in order to cast to it when loading
@@ -534,18 +539,18 @@ d3.select("body")
                 fanData.remove(selection, function(fan, line) {
                     return fan.line1 === line || fan.line2 === line;
                 });
-                unselect();
+                deselect();
                 update();
             }
             else if (selection instanceof Fan) {
                 fanData.remove(selection);
-                unselect();
+                deselect();
                 update();
             }
         }
         // esc key
         else if (d3.event.keyCode === 27) {
-            unselect();
+            deselect();
             update();
         }
     });
