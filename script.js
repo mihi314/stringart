@@ -243,6 +243,7 @@ function update() {
     updateFans();
     if (selection)
         updatePropertyBox(selection);
+    saveToLocalStorage();
 }
 
 // create and update the lines representing the nails
@@ -442,11 +443,54 @@ function moveSelection(dir) {
 ////////////
 // saving
 
-function save() {
-    deselect(); // set "selected" properties to false
+// eventhandler after clicking save button
+function saveButtonHandler() {
+    saveToFile(serializeToJSON(), "stringart.txt");
+}
+
+// eventhandler after clicking load button
+function loadButtonHandler() {
+    var file = event.target.files[0];
+    // user hit cancel etc
+    if (!file)
+        return;
+
+    var reader = new FileReader();
+    reader.onload = function() {
+        deserializeFromJSON(event.target.result);
+        update();
+    }
+    reader.readAsText(file);
+}
+
+function clearButtonHandler() {
+    lineData = [];
+    fanData = [];
+    deselect();
     update();
+}
+
+function saveToLocalStorage() {
+    window.localStorage.setItem("lastState", serializeToJSON());
+}
+
+function loadFromLocalStorage() {
+    var json = window.localStorage.getItem("lastState");
+    if (json) {
+        deserializeFromJSON(json);
+        update();
+    }
+}
+
+// serialization of the line and string data
+function serializeToJSON() {
     var json = JSON.stringify({"lineData": lineData, "fanData": fanData}, function(k, v) {
-        // also save the type of the object to serialize, in order to cast to it when loading
+        // always save lines and fans as not selected
+        if ((v instanceof Line) || (v instanceof Fan)) {
+            v.selected = false;
+        }
+
+        // also save the type of the object to serialize, in order to be able to cast to it when loading it again
         if (!(v instanceof Array) && (v.constructor.name !== "Object")) {
             v.type = v.constructor.name;
         }
@@ -459,33 +503,10 @@ function save() {
         }
         return v;
     });
-    
-    saveToFile(json, "stringart.txt");
+    return json;
 }
 
-function saveToFile(text, filename) {
-    var a = document.createElement("a");
-    var file = new Blob([text], {type: "text/plain"});
-    a.href = URL.createObjectURL(file);
-    a.download = filename;
-    a.click();
-}
-
-// eventhandler after clicking load button
-function loadFromFile() {
-    var file = event.target.files[0];
-    // user hit cancel etc
-    if (!file)
-        return;
-
-    var reader = new FileReader();
-    reader.onload = function() {
-        load(event.target.result);
-    }
-    reader.readAsText(file);
-}
-
-function load(jsonString) {
+function deserializeFromJSON(jsonString) {
     var json = JSON.parse(jsonString, function(k, v) {
         // cast objects back to our types again
         if (v.type) {
@@ -506,9 +527,16 @@ function load(jsonString) {
         fan.line2 = lineData[fan.line2];
         return fan;
     });
-
-    update();
 }
+
+function saveToFile(text, filename) {
+    var a = document.createElement("a");
+    var file = new Blob([text], {type: "text/plain"});
+    a.href = URL.createObjectURL(file);
+    a.download = filename;
+    a.click();
+}
+
 
 
 ////////////
@@ -559,4 +587,5 @@ d3.select("body")
 attachPropHandlers(Line, lineProps);
 attachPropHandlers(Fan, fanProps);
 
+loadFromLocalStorage();
 update();

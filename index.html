@@ -20,11 +20,12 @@
             <button class="btn btn-primary" onclick="changeMode('select')">select</button>
             <button class="btn btn-success" onclick="moveSelection(1)">layer up</button>
             <button class="btn btn-success" onclick="moveSelection(-1)">layer down</button>
-            <button class="btn btn-default" onclick="save()">save</button>
+            <button class="btn btn-default" onclick="saveButtonHandler()">save</button>
             <label class="btn btn-default" for="load-btn">
-                <input id="load-btn" type="file" style="display:none;" onchange="loadFromFile()">
+                <input id="load-btn" type="file" style="display:none;" onchange="loadButtonHandler()">
                 load
             </label>
+            <button class="btn btn-default" onclick="clearButtonHandler()">clear</button>
 
             <div>
                 <div class="line-selection">
