@@ -1,15 +1,23 @@
 function Line(p1, p2) {
     // don't rely on p1 or p2 to stay the same object, may be replaced
     // (i.e. don't keep references to them)
-    this.p1 = p1; // Vector
-    this.p2 = p2;
-    this.selected = false;
+    this.p1 = p1; // Vector, tail
+    this.p2 = p2; // arrow
+    // keep this point fixed when adjusting length/angle
+    this.keepFixed = "p1"
 }
-Line.prototype.length = function(newLength) {
+Line.prototype.length = function() {
     return this.p2.minus(this.p1).length();
 };
-Line.prototype.angle = function(newAngle) {
+Line.prototype.angle = function() {
     return this.p2.minus(this.p1).angle();
+};
+Line.prototype.adjust = function(newLength, newAngle) {
+    var delta = Vector.fromPolar(newLength, newAngle)
+    if (this.keepFixed === "p1")
+        this.p2 = this.p1.plus(delta);
+    else
+        this.p1 = this.p2.minus(delta);
 };
 
 function Fan(line1, line2) {
@@ -20,8 +28,7 @@ function Fan(line1, line2) {
     this.color = "#2d8923"
     this.strokeWidth = 1;
     this.numNails = 20;
-    this.selected = false;
-};
+}
 // return all the lines/strings comprising the fan that spans line1 and line2
 // p1 of the returned strings touch line1, p2 touch line2
 Fan.prototype.strings = function() {
@@ -255,7 +262,7 @@ function updateLines() {
     lines.exit().remove();
     // enter+update
     lines.attr(lineAttrs)
-        .classed("selected", function(d) { return d.selected; });
+        .classed("selected", isSelected);
     
     // dragging circles are in a separate group so that they are always on top
     // of the rest of the svg elements
@@ -296,7 +303,7 @@ function updateFans() {
     // set attributes for all string lines
     fans.select("g.string")
         .attr("stroke", function(d) { return d.color; })
-        .attr("stroke-width", function(d) { return d.strokeWidth * (d.selected ? 1.5 : 1); });
+        .attr("stroke-width", function(d) { return d.strokeWidth * (isSelected(d) ? 1.5 : 1); });
 
     // actual strings
     var strings = fans.select("g.string").selectAll("line")
@@ -331,43 +338,54 @@ function updatePropertyBox(lineOrFan) {
         var idSuffix = "fan";
     }
     props.forEach(function(prop, accessors) {
-        d3.select("#" + idSuffix + "-" + prop).property("value", accessors.get(lineOrFan));
+        $("#" + idSuffix + "-" + prop).val(accessors.get(lineOrFan));
     })
 }
 
-// accessors for updating line and fan properties via the properies box
+// accessors for updating line and fan properties via the properties box
 var lineProps = d3.map({
-    x1: {set: function(line, val) { val = Number(val); line.p1.x = val; },
+    x1: {event: "input",
+         set: function(line, val) { val = Number(val); line.p1.x = val; },
          get: function(line) { return Math.round(line.p1.x); }},
-    y1: {set: function(line, val) { val = Number(val); line.p1.y = val; },
+    y1: {event: "input",
+         set: function(line, val) { val = Number(val); line.p1.y = val; },
          get: function(line) { return Math.round(line.p1.y); }},
-    x2: {set: function(line, val) { val = Number(val); line.p2.x = val; },
+    x2: {event: "input",
+         set: function(line, val) { val = Number(val); line.p2.x = val; },
          get: function(line) { return Math.round(line.p2.x); }},
-    y2: {set: function(line, val) { val = Number(val); line.p2.y = val; },
+    y2: {event: "input",
+         set: function(line, val) { val = Number(val); line.p2.y = val; },
          get: function(line) { return Math.round(line.p2.y); }},
     length: {
-        set: function(line, val) {
-            val = Number(val);
-            var delta = line.p2.minus(line.p1);
-            line.p2 = line.p1.plus(Vector.fromPolar(val, line.angle()));
-        },
+        event: "input",
+        set: function(line, val) { line.adjust(Number(val), line.angle()); },
         get: function(line) { return Math.round(line.length()); }},
     angle: {
-        set: function(line, val) {
-            val = Number(val);
-            var delta = line.p2.minus(line.p1);
-            line.p2 = line.p1.plus(Vector.fromPolar(delta.length(), val));
-        },
-        get: function(line) { return Math.round(line.angle()*10)/10; }}
+        event: "input",
+        // take the negative angle values, in order to make it more intuitive
+        set: function(line, val) { line.adjust(line.length(), -Number(val)); },
+        get: function(line) { return -Math.round(line.angle()*10)/10; }},
+    keepFixedTail: {
+        event: "change",
+        set: function(line, val) { line.keepFixed = "p1"; },
+        get: function(line) { return line.keepFixed === "p1" ? ["on"] : ["off"] }
+    },
+    keepFixedArrow: {
+        event: "change",
+        set: function(line, val) { line.keepFixed = "p2"; },
+        get: function(line) { return line.keepFixed === "p2" ? ["on"] : ["off"] }
+    }
 });
 var fanProps = d3.map({
     color: {
+        event: "input",
         set: function(fan, val) {
             fan.color = val;
         },
         get : function(fan) { return fan.color; }
     },
     strokeWidth: {
+        event: "input",
         set: function(fan, val) {
             val = Number(val);
             if (val >= 0)
@@ -376,6 +394,7 @@ var fanProps = d3.map({
         get: function(fan) { return fan.strokeWidth; }
     },
     numNails: {
+        event: "input",
         set: function(fan, val) {
             val = Number(val);
             if (val >= 2)
@@ -388,7 +407,7 @@ var fanProps = d3.map({
 function attachPropHandlers(type, props) {
     var idSuffix = (type === Line) ? "line" : "fan";
     props.forEach(function(prop, accessors) {
-        d3.select("#" + idSuffix + "-" + prop).on("input", function() {
+        d3.select("#" + idSuffix + "-" + prop).on(accessors.event, function() {
             if (!(selection instanceof type))
                 return;
             if (this.value) {
@@ -404,16 +423,15 @@ function attachPropHandlers(type, props) {
 // selection
 
 function select(primitive) {
-    deselect();
     selection = primitive;
-    selection.selected = true;
 }
 
 function deselect() {
-    if (selection) {
-        selection.selected = false;
-        selection = null;
-    }
+    selection = null;
+}
+
+function isSelected(primitive) {
+    return selection === primitive;
 }
 
 // changes the z-position of the selected Line/Fan
@@ -485,11 +503,6 @@ function loadFromLocalStorage() {
 // serialization of the line and string data
 function serializeToJSON() {
     var json = JSON.stringify({"lineData": lineData, "fanData": fanData}, function(k, v) {
-        // always save lines and fans as not selected
-        if ((v instanceof Line) || (v instanceof Fan)) {
-            v.selected = false;
-        }
-
         // also save the type of the object to serialize, in order to be able to cast to it when loading it again
         if (!(v instanceof Array) && (v.constructor.name !== "Object")) {
             v.type = v.constructor.name;
@@ -503,12 +516,13 @@ function serializeToJSON() {
         }
         return v;
     });
+
     return json;
 }
 
 function deserializeFromJSON(jsonString) {
     var json = JSON.parse(jsonString, function(k, v) {
-        // cast objects back to our types again
+        // cast objects back to original types again
         if (v.type) {
             var constructor = window[v.type];
             console.assert(constructor);

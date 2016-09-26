@@ -8,6 +8,7 @@
         <title>Stringart</title>
         <script type="text/javascript" src="lib/d3.js"></script>
         <script type="text/javascript" src="lib/underscore-min.js"></script>
+        <script type="text/javascript" src="lib/jquery.min.js"></script>
         <script type="text/javascript" src="utility.js"></script>
 
         <link href="lib/bootstrap.css" rel="stylesheet">
@@ -32,7 +33,11 @@
                     <strong>Selected Line</strong>
                     <div>x1<input id="line-x1" type="number"> y1<input id="line-y1" type="number"></div>
                     <div>x2<input id="line-x2" type="number"> y2<input id="line-y2" type="number"></div>
-                    <div>Length<input id="line-length" type="number" min="2" step="1"></div>
+                    <div>Keep fixed
+                        <label class="radio-inline"><input type="radio" name="keep-fixed" id="line-keepFixedTail" checked>tail</label>
+                        <label class="radio-inline"><input type="radio" name="keep-fixed" id="line-keepFixedArrow">arrow</label>
+                    </div>
+                    <div>Length<input id="line-length" type="number" min="0" step="10"></div>
                     <div>Angle<input id="line-angle" type="number" step="5"></div>
                 </div>
                 <div class="fan-selection">
