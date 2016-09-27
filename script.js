@@ -85,6 +85,7 @@ var modeDraw = {
             // create a new fan with it
             if (selection instanceof Line) {
                 var newFan = new Fan(selection, newLine);
+                newFan.color = lastColor;
                 newFan.numNails = Math.max(Math.round(newFan.line1.length() / nailDistance + 1), 2);
                 fanData.push(newFan);
             }
@@ -197,7 +198,7 @@ function snapToLength(p, lineStart, length) {
     var curLineLength = delta.length();
 
     if (curLineLength == 0) {
-        // p and lineStart are the same, can't determine a direction to strech in
+        // p and lineStart are the same, can't determine a direction to stretch in
         return p;
     }
 
@@ -382,7 +383,10 @@ var fanProps = d3.map({
         set: function(fan, val) {
             fan.color = val;
         },
-        get : function(fan) { return fan.color; }
+        get : function(fan) {
+            lastColor = fan.color;
+            return fan.color;
+        }
     },
     strokeWidth: {
         event: "input",
@@ -563,6 +567,7 @@ var selection = null; // Fan, String or null
 var mode = modeDraw;
 
 var nailDistance = 20;
+var lastColor = "#2d8923";
 
 var svg = d3.select("svg")
     .on("click", function() {
