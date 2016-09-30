@@ -3,8 +3,8 @@ function Line(p1, p2) {
     // (i.e. don't keep references to them)
     this.p1 = p1; // Vector, tail
     this.p2 = p2; // arrow
-    // keep this point fixed when adjusting length/angle
-    this.keepFixed = "p1"
+    // keep this side fixed when adjusting length/angle
+    this.keepFixed = "p1";
 }
 Line.prototype.length = function() {
     return this.p2.minus(this.p1).length();
@@ -18,6 +18,13 @@ Line.prototype.adjust = function(newLength, newAngle) {
         this.p2 = this.p1.plus(delta);
     else
         this.p1 = this.p2.minus(delta);
+};
+Line.prototype.sideOf = function(p) {
+    if (this.p1.eq(p))
+        return "p1"
+    if (this.p2.eq(p))
+        return "p2"
+    return null;
 };
 
 function Fan(line1, line2) {
@@ -89,11 +96,13 @@ var modeDraw = {
                 newFan.numNails = Math.max(Math.round(newFan.line1.length() / nailDistance + 1), 2);
                 fanData.push(newFan);
             }
+
+            // then select the new line (to see its properties while moving)
+            select(newLine);
         }
         // finish current line
         else {
             this.updatingLine = false;
-            select(lineData[lineData.length - 1]);
             update();
         }
     },
@@ -126,30 +135,48 @@ var modeSelect = {
     mousemove: function(){},
 
     // select fan
-    fanClick: function(elem) {
+    fanClick: function(d, elem) {
         d3.event.stopPropagation();
         select(d3.select(elem.parentNode.parentNode).datum());
         update();
     },
 
     // select line
-    circleClick: function(elem) {
-        // select corresponding line
+    // d: {line, side}
+    circleClick: function(d, elem) {
         d3.event.stopPropagation();
-        select(d3.select(elem.parentNode).datum());
+
+        // select corresponding line
+        select(this.nextLineInStack(d.line[d.side], selection));
         update();
     },
 
     // move line end around
-    circleDrag: function(elem, mouseCoords) {
-        var d = d3.select(elem).datum(); // {p: point, side: either "p1" or "p2"}
+    // d: {line, side}
+    circleDrag: function(d, elem) {
         var otherSide = d.side === "p1" ? "p2" : "p1";
 
-        var line = d3.select(elem.parentNode).datum();
-
-        var snapped = snap(new Vector(mouseCoords[0], mouseCoords[1]), line, line[otherSide], nailDistance);
-        line[d.side] = snapped;
+        var snapped = snap(new Vector(d3.event.x, d3.event.y), d.line, d.line[otherSide], nailDistance);
+        d.line[d.side] = snapped;
         update();
+    },
+
+    // returns the line one below currentLine (wraps around)
+    // currentLine can be any object
+    nextLineInStack: function(point, currentLine) {
+        // find all lines which endpoints are stacked at the clicked circle
+        var stackedLines = lineData.filter(function(line, i) {
+            return line.sideOf(point) !== null;
+        });
+        console.assert(stackedLines.length > 0);
+
+        var stackPos = stackedLines.indexOf(currentLine);
+        if (stackPos == -1)
+            var line = stackedLines[0]
+        else
+            var line = stackedLines[(stackPos+1) % stackedLines.length]
+
+        return line;
     }
 };
 
@@ -209,7 +236,7 @@ function snapToLength(p, lineStart, length) {
     return p;
 }
 
-// priorize snapping to nails
+// prioritize snapping to nails
 // lineStart: the starting point of line ending in p
 // returns p when no snapping was done
 function snap(p, excludedLine, lineStart, nailDistance) {
@@ -264,30 +291,55 @@ function updateLines() {
     // enter+update
     lines.attr(lineAttrs)
         .classed("selected", isSelected);
-    
+
+
+    // circles for dragging and selecting in selection mode
+
     // dragging circles are in a separate group so that they are always on top
     // of the rest of the svg elements
-    // they are additionaly grouped in pairs
+    // they are additionally grouped in pairs
     var groups = svg.select("g#circles").selectAll("g")
-        .data(lineData);
+        .data(lineData, function(d) { return Object.id(d); });
     groups.enter().append("g")
     groups.exit().remove();
 
-    var drag = d3.behavior.drag().on("drag", function(d) {
-            mode.circleDrag(this, d3.mouse(this));
+    // sorting to move the circles of the selected line to the top, 
+    // which is then prioritized when dragging (when multiple circles 
+    // are stacked on top of each other)
+    // the key function above is needed for this to work
+    groups.sort(function(line1, line2) {
+        if (isSelected(line1))
+            return 1;
+        if (isSelected(line2))
+            return -1; 
+        return 0;
+    });
+
+    var drag = d3.behavior.drag()
+        .on("drag", function(d) {
+            d3.event.sourceEvent.stopPropagation();
+            mode.circleDrag(d, this);
         });
 
-    // circles for dragging in selection mode
     var circles = groups.selectAll("circle")
-        .data(function(d) { return [{p: d.p1, side: "p1"}, {p: d.p2, side: "p2"}] })
+        .data(function(d) { return [{line: d, side: "p1"}, {line: d, side: "p2"}] });
     circles.enter().append("circle")
         .call(drag)
         .on("click", function(d) {
-            mode.circleClick(this);
+            if (d3.event.defaultPrevented)
+                return; // click already suppressed
+            mode.circleClick(d, this);
         })
     circles.exit().remove();
-    circles.attr("cx", function(d) { return d.p.x; })
-           .attr("cy", function(d) { return d.p.y; });
+    circles.attr("cx", function(d) { return d.line[d.side].x; })
+           .attr("cy", function(d) { return d.line[d.side].y; });
+}
+function moveToEnd(array, elem) {
+    var pos = array.indexOf(elem);
+    if (pos !== -1) {
+        array.splice(pos, 1);
+        array.push(elem);
+    }
 }
 
 // create and update the lines representing the strings between pairs of nails
@@ -322,7 +374,9 @@ function updateFans() {
         });
     stringsHover.enter().append("line")
         .on("click", function(d) {
-            mode.fanClick(this);
+            if (d3.event.defaultPrevented)
+                return; // click already suppressed
+            mode.fanClick(d, this);
         })
     stringsHover.exit().remove();
     stringsHover.attr(lineAttrs);
@@ -571,6 +625,8 @@ var lastColor = "#2d8923";
 
 var svg = d3.select("svg")
     .on("click", function() {
+        if (d3.event.defaultPrevented)
+            return; // click already suppressed
         mode.svgClick(d3.mouse(this));
     })
     .on("mousemove", function() {

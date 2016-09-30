@@ -4,8 +4,8 @@ Array.prototype.remove = function(elem, comp) {
     if (comp === undefined)
         comp = function(e1, e2) { return e1 === e2; };
 
-    for(var i = this.length - 1; i >= 0; i--) {
-        if(comp(this[i], elem)) {
+    for (var i = this.length - 1; i >= 0; i--) {
+        if (comp(this[i], elem)) {
             this.splice(i, 1);
         }
     }
@@ -65,3 +65,16 @@ Vector.prototype.closestPoint = function(points) {
     }
     return minPoint;
 }
+
+// to generate unique ids to identify objects in d3.js data joins
+Object.next_uniqueid = 1;
+Object.id = function(o) {
+    if (typeof o.__uniqueid === "undefined") {
+        Object.defineProperty(o, "__uniqueid", {
+            value: Object.next_uniqueid++,
+            enumerable: false,
+            writable: false
+        });
+    }
+    return o.__uniqueid;
+};
