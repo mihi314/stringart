@@ -113,7 +113,7 @@ var modeDraw = {
         if (this.updatingLine) {
             var lastLine = lineData[lineData.length - 1];
             var mousePos = new Vector(mouseCoords[0], mouseCoords[1]);
-            lastLine.p2 = snap(mousePos, lastLine, lastLine.p1, nailDistance);
+            lastLine.p2 = snap(mousePos, lastLine, lastLine.p1, nailDistance, angleDelta);
             update();
         }
     },
@@ -156,7 +156,8 @@ var modeSelect = {
     circleDrag: function(d, elem) {
         var otherSide = d.side === "p1" ? "p2" : "p1";
 
-        var snapped = snap(new Vector(d3.event.x, d3.event.y), d.line, d.line[otherSide], nailDistance);
+        var mousePos = new Vector(d3.event.x, d3.event.y);
+        var snapped = snap(mousePos, d.line, d.line[otherSide], nailDistance, angleDelta);
         d.line[d.side] = snapped;
         update();
     },
@@ -219,28 +220,26 @@ function snapToNails(p, excludedLine) {
 
 // lineStart: the starting point of line ending in p
 // returns p when no snapping was done
-function snapToLength(p, lineStart, length) {
+function snapToLengthAndAngle(p, lineStart, length, angle) {
     var radius = 20;
-    var delta = p.minus(lineStart);
-    var curLineLength = delta.length();
-
-    if (curLineLength == 0) {
-        // p and lineStart are the same, can't determine a direction to stretch in
-        return p;
-    }
-
-    if (Math.abs(length - curLineLength) < radius) {
-        // stretch the line
-        return lineStart.plus(delta.times(length / curLineLength));
+    var newP = lineStart.plus(Vector.fromPolar(length, angle));
+    if (newP.minus(p).length() < radius) {
+        return newP;
     }
     return p;
 }
 
-// prioritize snapping to nails
+
+// snapping precedence: nails, selected line length, nailDistance
 // lineStart: the starting point of line ending in p
 // returns p when no snapping was done
-function snap(p, excludedLine, lineStart, nailDistance) {
+function snap(p, excludedLine, lineStart, nailDistance, angleDelta) {
     var snap1 = snapToNails(p, excludedLine);
+    // actually snapped to a nail
+    if (!snap1.eq(p))
+        return snap1;
+
+    var delta = p.minus(lineStart);
 
     // snap to selected line length
     // but not when the excluded line (i.e. the one being changed) is the selected one
@@ -251,14 +250,12 @@ function snap(p, excludedLine, lineStart, nailDistance) {
     // snap to multiples of nailDistance
     // hmmm, only when not in circleDrag?
     else {
-        var curLineLength = p.minus(lineStart).length();
+        var curLineLength = delta.length();
         var length = Math.round(curLineLength / nailDistance) * nailDistance;
     }
-    var snap2 = snapToLength(p, lineStart, length);
 
-    // actually snapped to a nail
-    if (!snap1.eq(p))
-        return snap1;
+    var angle = Math.round(delta.angle() / angleDelta) * angleDelta;
+    var snap2 = snapToLengthAndAngle(p, lineStart, length, angle);
     return snap2;
 }
 
@@ -621,6 +618,7 @@ var selection = null; // Fan, String or null
 var mode = modeDraw;
 
 var nailDistance = 20;
+var angleDelta = 5;
 var lastColor = "#2d8923";
 
 var svg = d3.select("svg")
