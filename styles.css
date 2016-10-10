@@ -1,3 +1,4 @@
+/* svg */
 g#lines line {
     stroke-width: 2;
     stroke: lightgrey;
@@ -27,15 +28,54 @@ g#fans g.hover {
     stroke: none;
     pointer-events: all;
 }
-/*g.fans g.hover:hover {
+/*g#fans g.hover:hover {
     stroke-width: 2;
     stroke: rgb(0, 102, 0);
 }*/
 
-div.line-selection {
-    float: left;
+
+/* html */
+html, body {
+    height: 100%;
+    /*background-color: #aaa;*/
+}
+.toolbar {
+    width: 100%;
+    height: 34px;
+}
+.non-toolbar {
+    height: 100%;
+    margin-top: -34px;
+    padding-top: 34px;
 }
 
+.property-box {
+    float: left;
+    width: 240px;
+    height: 100%;
+    padding-left: 5px;
+}
+input[type="number"] {
+    width: 60px;
+}
+
+.svg-container1 {
+    float: left;
+    height: 100%;
+    /* "hack" in order to make the svg span all the remaining horizontal space */
+    width: 100%;
+    margin-left: -240px;
+    padding-left: 240px;
+}
+/* for the scrollbars */
+.svg-container2 {
+    height: 100%;
+    overflow: scroll;
+}
 svg {
     cursor: default;
+    background-color: #222;
+    width: 2000px;
+    height: 2000px;
+    margin-bottom: -5px; /* removes mysterious whitespace above scrollbar */
 }
