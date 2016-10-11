@@ -39,13 +39,15 @@ html, body {
     height: 100%;
     /*background-color: #aaa;*/
 }
+.corner {
+    float: left;
+    width: 240px;
+}
 .toolbar {
-    /*width: 100%;*/
-    position: relative;
-    left: 240px;
     height: 34px;
 }
 .non-toolbar {
+    /* "hack" in order to make the it span all the remaining vertical space */
     height: 100%;
     margin-top: -34px;
     padding-top: 34px;
