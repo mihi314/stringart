@@ -18,10 +18,10 @@
     <body>
         <div class="row toolbar">
             <div class="col-xs-12">
-                <button class="btn btn-primary" onclick="changeMode('draw')">draw</button>
-                <button class="btn btn-primary" onclick="changeMode('select')">select</button>
-                <button class="btn btn-success" onclick="moveSelection(1)">layer up</button>
-                <button class="btn btn-success" onclick="moveSelection(-1)">layer down</button>
+                <button class="btn btn-primary" onclick="changeMode('draw')" accesskey="1">draw</button>
+                <button class="btn btn-primary" onclick="changeMode('select')" accesskey="2">select</button>
+                <button class="btn btn-success" onclick="moveSelection(1)" accesskey="3">layer up</button>
+                <button class="btn btn-success" onclick="moveSelection(-1)" accesskey="4">layer down</button>
                 <button class="btn btn-default" onclick="saveButtonHandler()">save</button>
                 <label class="btn btn-default" for="load-btn">
                     <input id="load-btn" type="file" style="display:none;" onchange="loadButtonHandler()">

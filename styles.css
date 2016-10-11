@@ -1,14 +1,14 @@
 /* svg */
 g#lines line {
     stroke-width: 2;
-    stroke: lightgrey;
+    stroke: black;
 }
 g#lines line.selected {
-    stroke: black;
+    stroke: lightgrey;
     marker-end: url("#arrowhead");
 }
 .arrowhead {
-    fill: black;
+    fill: lightgrey;
 }
 
 g#circles circle {
@@ -40,7 +40,9 @@ html, body {
     /*background-color: #aaa;*/
 }
 .toolbar {
-    width: 100%;
+    /*width: 100%;*/
+    position: relative;
+    left: 240px;
     height: 34px;
 }
 .non-toolbar {
@@ -70,6 +72,7 @@ input[type="number"] {
 /* for the scrollbars */
 .svg-container2 {
     height: 100%;
+    width: 100%;
     overflow: scroll;
 }
 svg {
