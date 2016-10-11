@@ -522,14 +522,14 @@ function saveButtonHandler() {
 }
 
 // eventhandler after clicking load button
-function loadButtonHandler() {
+function loadButtonHandler(event) {
     var file = event.target.files[0];
     // user hit cancel etc
     if (!file)
         return;
 
     var reader = new FileReader();
-    reader.onload = function() {
+    reader.onload = function(event) {
         deserializeFromJSON(event.target.result);
         update();
     }
