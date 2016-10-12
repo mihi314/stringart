@@ -518,7 +518,7 @@ function moveSelection(dir) {
 
 // eventhandler after clicking save button
 function saveButtonHandler() {
-    saveToFile(serializeToJSON(), "stringart.txt");
+    saveToFile(serializeToJSON(), "stringart.json");
 }
 
 // eventhandler after clicking load button
@@ -534,6 +534,28 @@ function loadButtonHandler(event) {
         update();
     }
     reader.readAsText(file);
+}
+
+function exportButtonHandler() {
+    var box = getBoundingBox(lineData);
+    var content = d3.select("svg").html();
+    // one pixel corresponds to 1mm
+    var size = 'width="{0}mm" height="{1}mm" viewBox="{2} {3} {0} {1}"'.format(
+        box.max.x-box.min.x, box.max.y-box.min.y, box.min.x, box.min.y
+    )
+    var svgString = '<svg {0} xmlns="http://www.w3.org/2000/svg" version="1.1">{1}</svg>'.format(size, content);
+    saveToFile(svgString, "stringart.svg");
+}
+function getBoundingBox(lines) {
+    var nails = lines.flatMap(function(line) {
+        return [line.p1, line.p2];
+    });
+    var extentX = d3.extent(nails, function(p) { return p.x; });
+    var extentY = d3.extent(nails, function(p) { return p.y; });
+    return {
+        min: new Vector(extentX[0], extentY[0]),
+        max: new Vector(extentX[1], extentY[1])
+    };
 }
 
 function clearButtonHandler() {
@@ -603,7 +625,9 @@ function saveToFile(text, filename) {
     var file = new Blob([text], {type: "text/plain"});
     a.href = URL.createObjectURL(file);
     a.download = filename;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
 }
 
 

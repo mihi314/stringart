@@ -1,9 +1,10 @@
 /* svg */
 g#lines line {
-    stroke-width: 2;
+    stroke-width: 0;
     stroke: black;
 }
 g#lines line.selected {
+    stroke-width: 2;
     stroke: lightgrey;
     marker-end: url("#arrowhead");
 }
@@ -80,7 +81,5 @@ input[type="number"] {
 svg {
     cursor: default;
     background-color: #222;
-    width: 2000px;
-    height: 2000px;
     margin-bottom: -5px; /* removes mysterious whitespace above scrollbar */
 }

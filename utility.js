@@ -78,3 +78,11 @@ Object.id = function(o) {
     }
     return o.__uniqueid;
 };
+
+String.prototype.format = function() {
+  return this.replace(/\{\{|\}\}|\{(\d+)\}/g, function (m, n) {
+    if (m == "{{") { return "{"; }
+    if (m == "}}") { return "}"; }
+    return arguments[n];
+  });
+};

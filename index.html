@@ -27,6 +27,7 @@
                 <input id="load-btn" type="file" style="display:none;" onchange="loadButtonHandler(event)">
                 load
             </label>
+            <button class="btn btn-default" onclick="exportButtonHandler()">export to svg</button>
             <button class="btn btn-default" onclick="clearButtonHandler()">clear</button>
         </div>
         <div class="non-toolbar">
@@ -92,7 +93,7 @@
             
             <div class="svg-container1">
                 <div class="svg-container2">
-                    <svg>
+                    <svg width="700mm" height="700mm" viewBox="0 0 2000 2000">
                         <defs>
                             <marker id="arrowhead" markerWidth="12" markerHeight="12" refx="6" refy="4" orient="auto" markerUnits="strokeWidth">
                                 <path d="M 1 1 7 4 1 7 Z" class="arrowhead"/>
