@@ -539,7 +539,7 @@ function loadButtonHandler(event) {
 function exportButtonHandler() {
     var box = getBoundingBox(lineData);
     var content = d3.select("svg").html();
-    // one pixel corresponds to 1mm
+    // make one pixel correspond to 1mm when printed
     var size = 'width="{0}mm" height="{1}mm" viewBox="{2} {3} {0} {1}"'.format(
         box.max.x-box.min.x, box.max.y-box.min.y, box.min.x, box.min.y
     )
