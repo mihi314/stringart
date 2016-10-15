@@ -8,7 +8,7 @@ Ok, that one was pretty simple. But now have a look at this one, which is taken 
 <img src="images/red and blue.jpg?raw=true" width="500">
 
 #### Usage
-It's hosted at TODO, but make sure to use chrome, as it will probably not work poperly in other browsers.
+It's hosted at TODO, but make sure to use chrome, as it will probably not work properly in other browsers.
 
 
 [yt]: https://www.youtube.com/watch?v=YlJMmU01oq4
