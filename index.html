@@ -32,7 +32,7 @@
         <div class="non-toolbar">
             <div class="sidebar">
                 <div class="line-selection">
-                    <strong>Selected Line</strong>
+                    <h4>Selected Line</h4>
                     <div class="row">
                         <div class="col-xs-2">Tail</div>
                         <div class="col-xs-10">
@@ -68,7 +68,7 @@
                 </div>
 
                 <div class="fan-selection">
-                    <strong>Selected Fan</strong>
+                    <h4>Selected Fan</h4>
                     <div class="row">
                         <div class="col-xs-2">Color</div>
                         <div class="col-xs-10">
@@ -87,6 +87,37 @@
                             <input id="fan-numNails" type="number" min="2" step="1">
                         </div>
                     </div>
+                </div>
+
+                <div class="usage">
+                    <h4>Usage</h4>
+                    <dl>
+                        <dt>draw mode</dt>
+                        <dd>
+                            Draw lines (rows of 'nails') by clicking twice.
+                            Draw a second line while another one is selected to create a 'fan'.
+                        </dd>
+
+                        <dt>select mode</dt>
+                        <dd>
+                            Select lines by their endpoints and fans by clicking on individual 'strings'.
+                            Deselect by clicking somewhere empty or pressing <kbd>esc</kbd>.
+                            Line ends can be dragged around.
+                        </dd>
+
+                        <dt>layer up/down</dt>
+                        <dd>Make the selected fan be drawn above or below other fans.</dd>
+
+                        <dt>keyboard shortcuts</dt>
+                        <dd>
+                            <ul class="list-unstyled">
+                                <li><kbd>del</kbd> delete selected element</li>
+                                <li><kbd>esc</kbd> deselect</li>
+                                <li><kbd>alt + 1</kbd> draw mode</li>
+                                <li><kbd>alt + 2</kbd> select mode</li>
+                            </ul>
+                        </dd>
+                    </dl>
                 </div>
             </div>
             <div class="svg-container">

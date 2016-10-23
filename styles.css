@@ -56,11 +56,8 @@ g#fans g.hover {
     left: 0px;
     width: 240px;
     padding-left: 5px;
+    padding-right: 5px;
 }
-input[type="number"] {
-    width: 60px;
-}
-
 .svg-container {
     position: absolute;
     height: 100%;
@@ -73,4 +70,20 @@ svg {
     cursor: default;
     background-color: #222;
     margin-bottom: -5px; /* removes mysterious whitespace above scrollbar */
+}
+
+.fan-selection {
+    margin-top: 20px;
+}
+.usage {
+    margin-top: 50px;
+}
+input[type="number"] {
+    width: 60px;
+}
+h4 {
+    font-weight: bold;
+}
+dd {
+    margin-bottom: 5px;
 }
