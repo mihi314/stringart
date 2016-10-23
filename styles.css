@@ -36,47 +36,38 @@ g#fans g.hover {
 
 
 /* html */
-html, body {
-    height: 100%;
-    /*background-color: #aaa;*/
-}
-.corner {
-    float: left;
-    width: 240px;
-}
 .toolbar {
+    position: absolute;
     height: 34px;
+    left: 240px;
+    right: 0px;
 }
 .non-toolbar {
-    /* "hack" in order to make the it span all the remaining vertical space */
-    height: 100%;
-    margin-top: -34px;
-    padding-top: 34px;
+    position: absolute;
+    top: 34px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
 }
 
-.property-box {
-    float: left;
-    width: 240px;
+.sidebar {
+    position: absolute;
     height: 100%;
+    left: 0px;
+    width: 240px;
     padding-left: 5px;
 }
 input[type="number"] {
     width: 60px;
 }
 
-.svg-container1 {
-    float: left;
+.svg-container {
+    position: absolute;
     height: 100%;
-    /* "hack" in order to make the svg span all the remaining horizontal space */
-    width: 100%;
-    margin-left: -240px;
-    padding-left: 240px;
-}
-/* for the scrollbars */
-.svg-container2 {
-    height: 100%;
-    width: 100%;
-    overflow: scroll;
+    left: 240px;
+    right: 0px;
+    /* for the scrollbars */
+    overflow: auto;
 }
 svg {
     cursor: default;

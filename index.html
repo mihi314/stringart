@@ -16,7 +16,6 @@
         <link href="styles.css" rel="stylesheet">
     </head>
     <body>
-        <div class="corner">&nbsp;</div>
         <div class="toolbar">
             <button class="btn btn-primary" onclick="changeMode('draw')" accesskey="1">draw</button>
             <button class="btn btn-primary" onclick="changeMode('select')" accesskey="2">select</button>
@@ -31,7 +30,7 @@
             <button class="btn btn-default" onclick="clearButtonHandler()">clear</button>
         </div>
         <div class="non-toolbar">
-            <div class="property-box">
+            <div class="sidebar">
                 <div class="line-selection">
                     <strong>Selected Line</strong>
                     <div class="row">
@@ -90,20 +89,17 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="svg-container1">
-                <div class="svg-container2">
-                    <svg width="700mm" height="700mm" viewBox="0 0 2000 2000">
-                        <defs>
-                            <marker id="arrowhead" markerWidth="12" markerHeight="12" refx="6" refy="4" orient="auto" markerUnits="strokeWidth">
-                                <path d="M 1 1 7 4 1 7 Z" class="arrowhead"/>
-                            </marker>
-                        </defs>
-                        <g id="fans"></g>
-                        <g id="lines"></g>
-                        <g id="circles"></g>
-                    </svg>
-                </div>
+            <div class="svg-container">
+                <svg width="700mm" height="700mm" viewBox="0 0 2000 2000">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="12" markerHeight="12" refx="6" refy="4" orient="auto" markerUnits="strokeWidth">
+                            <path d="M 1 1 7 4 1 7 Z" class="arrowhead"/>
+                        </marker>
+                    </defs>
+                    <g id="fans"></g>
+                    <g id="lines"></g>
+                    <g id="circles"></g>
+                </svg>
             </div>
         </div>
         <script type="text/javascript", src="script.js"></script>
