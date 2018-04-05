@@ -1,60 +1,65 @@
-function Line(p1, p2) {
-    // don't rely on p1 or p2 to stay the same object, may be replaced
-    // (i.e. don't keep references to them)
-    this.p1 = p1; // Vector, tail
-    this.p2 = p2; // arrow
-    // keep this side fixed when adjusting length/angle
-    this.keepFixed = "p1";
-}
-Line.prototype.length = function() {
-    return this.p2.minus(this.p1).length();
-};
-Line.prototype.angle = function() {
-    return this.p2.minus(this.p1).angle();
-};
-Line.prototype.adjust = function(newLength, newAngle) {
-    var delta = Vector.fromPolar(newLength, newAngle)
-    if (this.keepFixed === "p1")
-        this.p2 = this.p1.plus(delta);
-    else
-        this.p1 = this.p2.minus(delta);
-};
-Line.prototype.sideOf = function(p) {
-    if (this.p1.eq(p))
-        return "p1"
-    if (this.p2.eq(p))
-        return "p2"
-    return null;
-};
-
-function Fan(line1, line2) {
-    // reference to lines in lineData
-    // keep the objects the same
-    this.line1 = line1; 
-    this.line2 = line2;
-    this.color = "#2d8923"
-    this.strokeWidth = 1;
-    this.numNails = 20;
-}
-// return all the lines/strings comprising the fan that spans line1 and line2
-// p1 of the returned strings touch line1, p2 touch line2
-Fan.prototype.strings = function() {
-    console.assert(this.numNails >= 2);
-    var l1p1 = this.line1.p1;
-    var l1p2 = this.line1.p2;
-    var l1delta = l1p2.minus(l1p1).div(this.numNails - 1)
-
-    var l2p1 = this.line2.p1;
-    var l2p2 = this.line2.p2;
-    var l2delta = l2p1.minus(l2p2).div(this.numNails - 1);
-
-    var lines = [];
-    for (i = 0; i < this.numNails; i++) {
-        lines.push(new Line(l1p1.plus(l1delta.times(i)), 
-                            l2p2.plus(l2delta.times(i))));
+class Line {
+    constructor(p1, p2) {
+        // don't rely on p1 or p2 to stay the same object, may be replaced
+        // (i.e. don't keep references to them)
+        this.p1 = p1; // Vector, tail
+        this.p2 = p2; // arrow
+        // keep this side fixed when adjusting length/angle
+        this.keepFixed = "p1";
     }
-    return lines;
-};
+    length() {
+        return this.p2.minus(this.p1).length();
+    }
+    angle() {
+        return this.p2.minus(this.p1).angle();
+    }
+    adjust(newLength, newAngle) {
+        var delta = Vector.fromPolar(newLength, newAngle)
+        if (this.keepFixed === "p1")
+            this.p2 = this.p1.plus(delta);
+        else
+            this.p1 = this.p2.minus(delta);
+    }
+    sideOf(p) {
+        if (this.p1.eq(p))
+            return "p1"
+        if (this.p2.eq(p))
+            return "p2"
+        return null;
+    }
+}
+
+class Fan {
+    constructor(line1, line2) {
+        // reference to lines in lineData
+        // keep the objects the same
+        this.line1 = line1; 
+        this.line2 = line2;
+        this.color = "#2d8923"
+        this.strokeWidth = 1;
+        this.numNails = 20;
+    }
+
+    // return all the lines/strings comprising the fan that spans line1 and line2
+    // p1 of the returned strings touches line1, p2 touches line2
+    strings() {
+        console.assert(this.numNails >= 2);
+        var l1p1 = this.line1.p1;
+        var l1p2 = this.line1.p2;
+        var l1delta = l1p2.minus(l1p1).div(this.numNails - 1)
+
+        var l2p1 = this.line2.p1;
+        var l2p2 = this.line2.p2;
+        var l2delta = l2p1.minus(l2p2).div(this.numNails - 1);
+
+        var lines = [];
+        for (var i = 0; i < this.numNails; i++) {
+            lines.push(new Line(l1p1.plus(l1delta.times(i)), 
+                                l2p2.plus(l2delta.times(i))));
+        }
+        return lines;
+    }
+}
 
 
 ////////
@@ -76,11 +81,11 @@ function changeMode(mode_) {
 var modeDraw = {
     updatingLine: false, // currently drawing a line (with updates on mousemove)
 
-    reset: function() {
+    reset() {
         this.updatingLine = false;
     },
 
-    svgClick: function(mouseCoords) {
+    svgClick(mouseCoords) {
         // start new line
         if (!this.updatingLine) {
             this.updatingLine = true;
@@ -108,7 +113,7 @@ var modeDraw = {
     },
 
     // todo: unify with modeSelect.circleDrag
-    mousemove: function(mouseCoords) {
+    mousemove(mouseCoords) {
         // update current line when moving mouse
         if (this.updatingLine) {
             var lastLine = lineData[lineData.length - 1];
@@ -118,24 +123,26 @@ var modeDraw = {
         }
     },
 
-    fanClick: function(){},
-    circleClick: function(){},
-    circleDrag: function(){},
+    fanClick() {},
+    circleClick() {},
+    circleDrag() {},
 };
 
 var modeSelect = {
-    reset: function(){},
+    reset() {},
 
     // deselect
-    svgClick: function() {
+    svgClick() {
+        if (d3.event.defaultPrevented)
+            return; // click already suppressed
         deselect();
         update();
     },
 
-    mousemove: function(){},
+    mousemove(){},
 
     // select fan
-    fanClick: function(d, elem) {
+    fanClick(d, elem) {
         d3.event.stopPropagation();
         select(d3.select(elem.parentNode.parentNode).datum());
         update();
@@ -143,7 +150,7 @@ var modeSelect = {
 
     // select line
     // d: {line, side}
-    circleClick: function(d, elem) {
+    circleClick(d, elem) {
         d3.event.stopPropagation();
 
         // select corresponding line
@@ -153,7 +160,9 @@ var modeSelect = {
 
     // move line end around
     // d: {line, side}
-    circleDrag: function(d, elem) {
+    circleDrag(d, elem) {
+        d3.event.sourceEvent.stopPropagation();
+
         var otherSide = d.side === "p1" ? "p2" : "p1";
 
         var mousePos = new Vector(d3.event.x, d3.event.y);
@@ -164,9 +173,9 @@ var modeSelect = {
 
     // returns the line one below currentLine (wraps around)
     // currentLine can be any object
-    nextLineInStack: function(point, currentLine) {
+    nextLineInStack(point, currentLine) {
         // find all lines which endpoints are stacked at the clicked circle
-        var stackedLines = lineData.filter(function(line, i) {
+        var stackedLines = lineData.filter((line, i) => {
             return line.sideOf(point) !== null;
         });
         console.assert(stackedLines.length > 0);
@@ -188,13 +197,13 @@ var modeSelect = {
 function snapToNails(p, excludedLine) {
     var radius = 10;
 
-    var nails1 = lineData.flatMap(function(line) {
+    var nails1 = lineData.flatMap((line) => {
         if (line !== excludedLine)
             return [line.p1, line.p2];
         return [];
     });
 
-    var nails2 = fanData.flatMap(function(fan) {
+    var nails2 = fanData.flatMap((fan) => {
         // exclude all nails that lie on the excludedLine
         // all nails on line1 of a fan are "p1", so only include "p2"
         var side = null;
@@ -203,7 +212,7 @@ function snapToNails(p, excludedLine) {
         else if (fan.line2 === excludedLine)
             side = "p1"
     
-        return fan.strings().flatMap(function(line) {
+        return fan.strings().flatMap((line) => {
             if (side)
                 return [line[side]];
             else
@@ -264,10 +273,10 @@ function snap(p, excludedLine, lineStart, nailDistance, angleDelta) {
 // updating of svg
 
 var lineAttrs = {
-    x1: function(d) { return d.p1.x; },
-    y1: function(d) { return d.p1.y; },
-    x2: function(d) { return d.p2.x; },
-    y2: function(d) { return d.p2.y; }
+    x1: (d) => d.p1.x,
+    y1: (d) => d.p1.y,
+    x2: (d) => d.p2.x,
+    y2: (d) => d.p2.y
 };
 
 function update() {
@@ -296,7 +305,7 @@ function updateLines() {
     // of the rest of the svg elements
     // they are additionally grouped in pairs
     var groups = svg.select("g#circles").selectAll("g")
-        .data(lineData, function(d) { return Object.id(d); });
+        .data(lineData, (d) => Object.id(d));
     groups.enter().append("g")
     groups.exit().remove();
 
@@ -304,7 +313,7 @@ function updateLines() {
     // which is then prioritized when dragging (when multiple circles 
     // are stacked on top of each other)
     // the key function above is needed for this to work
-    groups.sort(function(line1, line2) {
+    groups.sort((line1, line2) => {
         if (isSelected(line1))
             return 1;
         if (isSelected(line2))
@@ -313,30 +322,22 @@ function updateLines() {
     });
 
     var drag = d3.behavior.drag()
-        .on("drag", function(d) {
-            d3.event.sourceEvent.stopPropagation();
-            mode.circleDrag(d, this);
+        .on("drag", (d) => {
+            mode.circleDrag(d, d3.event.target);
         });
 
     var circles = groups.selectAll("circle")
-        .data(function(d) { return [{line: d, side: "p1"}, {line: d, side: "p2"}] });
+        .data((d) => [{line: d, side: "p1"}, {line: d, side: "p2"}]);
     circles.enter().append("circle")
         .call(drag)
-        .on("click", function(d) {
+        .on("click", (d) => {
             if (d3.event.defaultPrevented)
                 return; // click already suppressed
-            mode.circleClick(d, this);
+            mode.circleClick(d, d3.event.target);
         })
     circles.exit().remove();
-    circles.attr("cx", function(d) { return d.line[d.side].x; })
-           .attr("cy", function(d) { return d.line[d.side].y; });
-}
-function moveToEnd(array, elem) {
-    var pos = array.indexOf(elem);
-    if (pos !== -1) {
-        array.splice(pos, 1);
-        array.push(elem);
-    }
+    circles.attr("cx", (d) => d.line[d.side].x)
+           .attr("cy", (d) => d.line[d.side].y);
 }
 
 // create and update the lines representing the strings between pairs of nails
@@ -352,29 +353,27 @@ function updateFans() {
     // update+enter
     // set attributes for all string lines
     fans.select("g.string")
-        .attr("stroke", function(d) { return d.color; })
-        .attr("stroke-width", function(d) { return d.strokeWidth * (isSelected(d) ? 1.5 : 1); });
+        .attr("stroke", (d) => d.color)
+        .attr("stroke-width", (d) => d.strokeWidth * (isSelected(d) ? 1.5 : 1));
 
     // actual strings
     var strings = fans.select("g.string").selectAll("line")
-        .data(function(d) {
-            return d.strings();
-        });
+        .data((d) => d.strings());
     strings.enter().append("line");
     strings.exit().remove();
     strings.attr(lineAttrs);
 
     // broader strokes when hovering, for easier selection
+    // (disabled due to it being annoying, but click handling here still needed)
+    // TODO: remove hover code?
     var stringsHover = fans.select("g.hover").selectAll("line")
-        .data(function(d) {
-            return d.strings();
-        });
+        .data((d) => d.strings());
     stringsHover.enter().append("line")
-        .on("click", function(d) {
+        .on("click", (d) => {
             if (d3.event.defaultPrevented)
                 return; // click already suppressed
-            mode.fanClick(d, this);
-        })
+            mode.fanClick(d, d3.event.target);
+        });
     stringsHover.exit().remove();
     stringsHover.attr(lineAttrs);
 }
@@ -389,7 +388,7 @@ function updatePropertyBox(lineOrFan) {
         var props = fanProps;
         var idSuffix = "fan";
     }
-    props.forEach(function(prop, accessors) {
+    props.forEach((prop, accessors) => {
         $("#" + idSuffix + "-" + prop).val(accessors.get(lineOrFan));
     })
 }
@@ -397,76 +396,77 @@ function updatePropertyBox(lineOrFan) {
 // accessors for updating line and fan properties via the properties box
 var lineProps = d3.map({
     x1: {event: "input",
-         set: function(line, val) { val = Number(val); line.p1.x = val; },
-         get: function(line) { return Math.round(line.p1.x); }},
+         set(line, val) { val = Number(val); line.p1.x = val; },
+         get(line) { return Math.round(line.p1.x); }},
     y1: {event: "input",
-         set: function(line, val) { val = Number(val); line.p1.y = val; },
-         get: function(line) { return Math.round(line.p1.y); }},
+         set(line, val) { val = Number(val); line.p1.y = val; },
+         get(line) { return Math.round(line.p1.y); }},
     x2: {event: "input",
-         set: function(line, val) { val = Number(val); line.p2.x = val; },
-         get: function(line) { return Math.round(line.p2.x); }},
+         set(line, val) { val = Number(val); line.p2.x = val; },
+         get(line) { return Math.round(line.p2.x); }},
     y2: {event: "input",
-         set: function(line, val) { val = Number(val); line.p2.y = val; },
-         get: function(line) { return Math.round(line.p2.y); }},
+         set(line, val) { val = Number(val); line.p2.y = val; },
+         get(line) { return Math.round(line.p2.y); }},
     length: {
         event: "input",
-        set: function(line, val) { line.adjust(Number(val), line.angle()); },
-        get: function(line) { return Math.round(line.length()); }},
+        set(line, val) { line.adjust(Number(val), line.angle()); },
+        get(line) { return Math.round(line.length()); }},
     angle: {
         event: "input",
         // take the negative angle values, in order to make it more intuitive
-        set: function(line, val) { line.adjust(line.length(), -Number(val)); },
-        get: function(line) { return -Math.round(line.angle()*10)/10; }},
+        set(line, val) { line.adjust(line.length(), -Number(val)); },
+        get(line) { return -Math.round(line.angle()*10)/10; }},
     keepFixedTail: {
         event: "change",
-        set: function(line, val) { line.keepFixed = "p1"; },
-        get: function(line) { return line.keepFixed === "p1" ? ["on"] : ["off"] }
+        set(line, val) { line.keepFixed = "p1"; },
+        get(line) { return line.keepFixed === "p1" ? ["on"] : ["off"] }
     },
     keepFixedArrow: {
         event: "change",
-        set: function(line, val) { line.keepFixed = "p2"; },
-        get: function(line) { return line.keepFixed === "p2" ? ["on"] : ["off"] }
+        set(line, val) { line.keepFixed = "p2"; },
+        get(line) { return line.keepFixed === "p2" ? ["on"] : ["off"] }
     }
 });
 var fanProps = d3.map({
     color: {
         event: "input",
-        set: function(fan, val) {
+        set(fan, val) {
             fan.color = val;
         },
-        get : function(fan) {
+        get (fan) {
             lastColor = fan.color;
             return fan.color;
         }
     },
     strokeWidth: {
         event: "input",
-        set: function(fan, val) {
+        set(fan, val) {
             val = Number(val);
             if (val >= 0)
                 fan.strokeWidth = val;
         },
-        get: function(fan) { return fan.strokeWidth; }
+        get(fan) { return fan.strokeWidth; }
     },
     numNails: {
         event: "input",
-        set: function(fan, val) {
+        set(fan, val) {
             val = Number(val);
             if (val >= 2)
                 fan.numNails = val;
         },
-        get: function(fan) { return fan.numNails; }
+        get(fan) { return fan.numNails; }
     }
 });
 
 function attachPropHandlers(type, props) {
     var idSuffix = (type === Line) ? "line" : "fan";
-    props.forEach(function(prop, accessors) {
-        d3.select("#" + idSuffix + "-" + prop).on(accessors.event, function() {
+    props.forEach((prop, accessors) => {
+        d3.select("#" + idSuffix + "-" + prop).on(accessors.event, () => {
+            var value = d3.event.target.value;
             if (!(selection instanceof type))
                 return;
-            if (this.value) {
-                accessors.set(selection, this.value);
+            if (value) {
+                accessors.set(selection, value);
                 update();
             }
         });
@@ -529,10 +529,10 @@ function loadButtonHandler(event) {
         return;
 
     var reader = new FileReader();
-    reader.onload = function(event) {
+    reader.onload = (event) => {
         deserializeFromJSON(event.target.result);
         update();
-    }
+    };
     reader.readAsText(file);
 }
 
@@ -547,11 +547,9 @@ function exportButtonHandler() {
     saveToFile(svgString, "stringart.svg");
 }
 function getBoundingBox(lines) {
-    var nails = lines.flatMap(function(line) {
-        return [line.p1, line.p2];
-    });
-    var extentX = d3.extent(nails, function(p) { return p.x; });
-    var extentY = d3.extent(nails, function(p) { return p.y; });
+    var nails = lines.flatMap((line) => [line.p1, line.p2]);
+    var extentX = d3.extent(nails, (p) => p.x);
+    var extentY = d3.extent(nails, (p) => p.y);
     return {
         min: new Vector(extentX[0], extentY[0]),
         max: new Vector(extentX[1], extentY[1])
@@ -598,10 +596,16 @@ function serializeToJSON() {
 }
 
 function deserializeFromJSON(jsonString) {
+    var classes = {
+        "Fan": Fan,
+        "Line": Line,
+        "Vector": Vector
+    };
+
     var json = JSON.parse(jsonString, function(k, v) {
         // cast objects back to original types again
         if (v.type) {
-            var constructor = window[v.type];
+            var constructor = classes[v.type];
             console.assert(constructor);
             delete v.type;
 
@@ -613,7 +617,7 @@ function deserializeFromJSON(jsonString) {
     });
 
     lineData = json.lineData;
-    fanData = json.fanData.map(function(fan) {
+    fanData = json.fanData.map((fan) => {
         fan.line1 = lineData[fan.line1];
         fan.line2 = lineData[fan.line2];
         return fan;
@@ -646,22 +650,20 @@ var angleDelta = 5;
 var lastColor = "#2d8923";
 
 var svg = d3.select("svg")
-    .on("click", function() {
-        if (d3.event.defaultPrevented)
-            return; // click already suppressed
-        mode.svgClick(d3.mouse(this));
+    .on("click", () => {
+        mode.svgClick(d3.mouse(d3.event.target));
     })
-    .on("mousemove", function() {
-        mode.mousemove(d3.mouse(this));
+    .on("mousemove", () => {
+        mode.mousemove(d3.mouse(d3.event.target));
     })
 d3.select("body")
-    .on("keydown", function() {
+    .on("keydown", () => {
         // del key
         if (d3.event.keyCode === 46) {
             if (selection instanceof Line) {
                 lineData.remove(selection);
                 // also remove any fan containing that line
-                fanData.remove(selection, function(fan, line) {
+                fanData.remove(selection, (fan, line) => {
                     return fan.line1 === line || fan.line2 === line;
                 });
                 deselect();
