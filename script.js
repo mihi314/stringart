@@ -539,13 +539,15 @@ function loadButtonHandler(event) {
 function exportButtonHandler() {
     var box = getBoundingBox(lineData);
     var content = d3.select("svg").html();
+
+    var width = box.max.x - box.min.x;
+    var height = box.max.y - box.min.y;
     // make one pixel correspond to 1mm when printed
-    var size = 'width="{0}mm" height="{1}mm" viewBox="{2} {3} {0} {1}"'.format(
-        box.max.x-box.min.x, box.max.y-box.min.y, box.min.x, box.min.y
-    )
-    var svgString = '<svg {0} xmlns="http://www.w3.org/2000/svg" version="1.1">{1}</svg>'.format(size, content);
+    var size = `width="${width}mm" height="${height}mm" viewBox="${box.min.x} ${box.min.y} ${width} ${height}"`;
+    var svgString = `<svg ${size} xmlns="http://www.w3.org/2000/svg" version="1.1">${content}</svg>`;
     saveToFile(svgString, "stringart.svg");
 }
+
 function getBoundingBox(lines) {
     var nails = lines.flatMap((line) => [line.p1, line.p2]);
     var extentX = d3.extent(nails, (p) => p.x);

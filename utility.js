@@ -80,12 +80,3 @@ Object.id = function(o) {
     }
     return o.__uniqueid;
 };
-
-String.prototype.format = function() {
-    var args = arguments;
-    return this.replace(/\{\{|\}\}|\{(\d+)\}/g, (m, n) => {
-        if (m == "{{") { return "{"; }
-        if (m == "}}") { return "}"; }
-        return args[n];
-    });
-};
